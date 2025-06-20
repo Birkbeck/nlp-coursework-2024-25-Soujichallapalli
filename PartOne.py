@@ -2,10 +2,11 @@
 
 # Note: The template functions here and the dataframe format for structuring your solution is a suggested but not mandatory approach. You can use a different approach if you like, as long as you clearly answer the questions and communicate your answers clearly.
 
+import glob
 import nltk
 import spacy
 from pathlib import Path
-
+import pandas as pd
 
 nlp = spacy.load("en_core_web_sm")
 nlp.max_length = 2000000
@@ -43,11 +44,27 @@ def count_syl(word, d):
 def read_novels(path=Path.cwd() / "texts" / "novels"):
     """Reads texts from a directory of .txt files and returns a DataFrame with the text, title,
     author, and year"""
-    pass
+    data = []
+    # Creates a pandas dataframe with the following columns: text, title, author,year
+    for txt_file in path.glob("*.txt"):
+        title, author, year = txt_file.stem.split("-")
+        title = title.replace("_", " ").strip()
+        with open(txt_file, "r", encoding='utf-8') as file_handler:
+            text = file_handler.read()
+            data.append({
+                "text": text,
+                "title": title,
+                "author": author,
+                "year": year
+            })
+    df = pd.DataFrame(data)
+    # Sorts the dataframe by the year column before returning it, resetting or ignoring the dataframe index.
+    sorted_df = df.sort_values(by='year', ascending=True).reset_index(drop=True) 
+    return sorted_df
 
 
 def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
-    """Parses the text of a DataFrame using spaCy, stores the parsed docs as a column and writes 
+    """Parses the text of a DataFrame using spaCy, stores the parsed docs as a column and writes
     the resulting  DataFrame to a pickle file"""
     pass
 
@@ -96,10 +113,10 @@ if __name__ == "__main__":
     """
     uncomment the following lines to run the functions once you have completed them
     """
-    #path = Path.cwd() / "p1-texts" / "novels"
-    #print(path)
-    #df = read_novels(path) # this line will fail until you have completed the read_novels function above.
-    #print(df.head())
+    path = Path.cwd() / "p1-texts" / "novels"
+    print(path)
+    df = read_novels(path) # this line will fail until you have completed the read_novels function above.
+    print(df.head())
     #nltk.download("cmudict")
     #parse(df)
     #print(df.head())
