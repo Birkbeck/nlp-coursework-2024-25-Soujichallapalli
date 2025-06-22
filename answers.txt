@@ -1,1 +1,17 @@
 Answers to the text questions go here.
+
+Part 1, (d) When is the Flesch Kincaid score *not* a valid, robust or reliable estimator of 
+text difficulty? Give two conditions. (Text answer, 200 words maximum).
+
+Answer:
+The Flesch-Kincaid readability test may sometimes provide misleading results depending on the type of text being analysed. 
+
+(1) Informal writing like casual conversations or social media content frequently contains sentence fragments, slang, abbreviations. 
+These features can skew traditional measures of sentence and word counts, causing the score to be inaccurate and not necessarily reflect how comprehensible
+ the writing is.
+
+(2) Texts with technical jargon, such as scientific or medical articles, often include complex terms and words with many syllables. 
+This can artificially raise the reading level score, even if the material is easily understandable by the subject matter experts in the field. 
+
+Overall, when working with content that have specialized vocabulary, irregular formats, or informal language, relying solely on the Flesch-Kincaid score
+is not advisable.
