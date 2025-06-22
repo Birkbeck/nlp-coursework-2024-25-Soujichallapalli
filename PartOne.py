@@ -24,7 +24,15 @@ def fk_level(text, d):
     Returns:
         float: The Flesch-Kincaid Grade Level of the text. (higher grade is more difficult)
     """
-    pass
+    words = nltk.word_tokenize(text)
+    total_sentences = len(nltk.sent_tokenize(text))
+    total_syllables = 0
+    for word in words:
+        total_syllables += count_syl(word, d)
+    if len(words) == 0 or total_sentences == 0:
+        return 0.0
+    fk = 0.39 * (len(words) / total_sentences) + 11.8 * (total_syllables / len(words)) - 15.59
+    return fk
 
 
 def count_syl(word, d):
@@ -38,7 +46,28 @@ def count_syl(word, d):
     Returns:
         int: The number of syllables in the word.
     """
-    pass
+    word = word.lower()
+    if word in d:
+        return len(d[word][0])
+
+    num_syllables = 0
+    previous_char_vowel = False
+    
+    # Count syllables by counting vowel clusters
+    for char in word:
+        if char in "aeiouy":
+            if not previous_char_vowel:
+                num_syllables += 1
+            previous_char_vowel = True
+        else:
+            previous_char_vowel = False
+    
+    #Adjust for silent 'e' endings
+    if len(word) > 1 and word[-1] == "e":
+        num_syllables -= 1
+    
+    # Ensure at least one syllable is counted
+    return max(num_syllables, 1)
 
 
 def read_novels(path=Path.cwd() / "texts" / "novels"):
@@ -123,11 +152,11 @@ if __name__ == "__main__":
     print(path)
     df = read_novels(path) # this line will fail until you have completed the read_novels function above.
     print(df.head())
-    #nltk.download("cmudict")
+    nltk.download("cmudict")
     #parse(df)
     #print(df.head())
     print(get_ttrs(df))
-    #print(get_fks(df))
+    print(get_fks(df))
     #df = pd.read_pickle(Path.cwd() / "pickles" /"name.pickle")
     # print(adjective_counts(df))
     """ 
