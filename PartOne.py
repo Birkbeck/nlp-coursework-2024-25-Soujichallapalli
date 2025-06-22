@@ -74,6 +74,8 @@ def nltk_ttr(text):
     tokens = []
     tokens.extend(nltk.word_tokenize(text))
     tokens = [token.lower() for token in tokens if token.isalpha()]
+    if len(tokens) == 0:
+        return 0.0  # Avoid division by zero error when there are no tokens
     ttr = len(set(tokens)) / len(tokens)
     return ttr
 
