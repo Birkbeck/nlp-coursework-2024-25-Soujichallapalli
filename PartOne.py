@@ -25,13 +25,15 @@ def fk_level(text, d):
         float: The Flesch-Kincaid Grade Level of the text. (higher grade is more difficult)
     """
     words = nltk.word_tokenize(text)
+    # Only consider alphabetic tokens and convert to lowercase
+    clean_words = [word.lower() for word in words if word.isalpha()]
     total_sentences = len(nltk.sent_tokenize(text))
     total_syllables = 0
-    for word in words:
+    if len(clean_words) == 0 or total_sentences == 0:
+        return 0.0    
+    for word in clean_words:
         total_syllables += count_syl(word, d)
-    if len(words) == 0 or total_sentences == 0:
-        return 0.0
-    fk = 0.39 * (len(words) / total_sentences) + 11.8 * (total_syllables / len(words)) - 15.59
+    fk = (0.39 * (len(clean_words) / total_sentences)) + (11.8 * (total_syllables / len(clean_words))) - 15.59
     return fk
 
 
@@ -46,26 +48,27 @@ def count_syl(word, d):
     Returns:
         int: The number of syllables in the word.
     """
-    word = word.lower()
+    num_syllables = 0    
     if word in d:
-        return len(d[word][0])
-
-    num_syllables = 0
-    previous_char_vowel = False
-    
-    # Count syllables by counting vowel clusters
-    for char in word:
-        if char in "aeiouy":
-            if not previous_char_vowel:
+        # Iterate through the first available phoneme list
+        for phoneme in d[word][0]:
+            # The number of syllables in a pronunciation is equal to the number of stressed vowels 
+            if phoneme[-1].isdigit():
                 num_syllables += 1
-            previous_char_vowel = True
-        else:
-            previous_char_vowel = False
+    else:
+        previous_char_vowel = False
+
+        # Count syllables by counting vowel clusters
+        for char in word:
+            if char in "aeiouy" and (not previous_char_vowel):
+                num_syllables += 1
+                previous_char_vowel = True
+            else:
+                previous_char_vowel = False
     
-    #Adjust for silent 'e' endings
-    if len(word) > 1 and word[-1] == "e":
-        num_syllables -= 1
-    
+        # Adjust for silent 'e' endings
+        if len(word) > 1 and word.endswith('e'):
+            num_syllables -= 1  
     # Ensure at least one syllable is counted
     return max(num_syllables, 1)
 
