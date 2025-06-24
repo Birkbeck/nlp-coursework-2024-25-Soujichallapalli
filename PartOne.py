@@ -5,6 +5,7 @@
 import glob
 import nltk
 import spacy
+import pickle
 from pathlib import Path
 import pandas as pd
 
@@ -60,6 +61,7 @@ def count_syl(word, d):
 
         # Count syllables by counting vowel clusters
         for char in word:
+            # Check if the character is a vowel. 'Y' is also considered a vowel here.
             if char in "aeiouy" and (not previous_char_vowel):
                 num_syllables += 1
                 previous_char_vowel = True
@@ -98,7 +100,35 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
 def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
     """Parses the text of a DataFrame using spaCy, stores the parsed docs as a column and writes
     the resulting  DataFrame to a pickle file"""
-    pass
+    nlp = spacy.load("en_core_web_sm")
+    # Ensure the store_path exists
+    store_path.mkdir(parents=True, exist_ok=True)
+    # Stores the parsed documents in a new column called 'parsed_doc' in the DataFrame
+    df['parsed_doc'] = df['text'].apply(lambda x: process_text_in_sections(x, nlp))
+
+    # Serialise the DataFrame using pickle format
+    with open(store_path / out_name, 'wb') as f:
+        pickle.dump(df, f)
+
+    # Alternatively, we can use pandas 'to_pickle' method to serialise the DataFrame
+    # df.to_pickle(store_path / out_name)
+    
+    # Load the DataFrame
+    df = pd.read_pickle(store_path / out_name)
+    
+    # Return the dataframe
+    return df
+
+
+def process_text_in_sections(text, nlp, section_size=100000):
+    """Processes the text in sections to avoid memory issues with large texts."""
+    if len(text) <= nlp.max_length:
+        doc = nlp(text)
+        return doc
+    else:
+        sections = [text[i:i + section_size] for i in range(0, len(text), section_size)]
+        doc_sections = [nlp(section) for section in sections]
+        return doc_sections
 
 
 def nltk_ttr(text):
@@ -156,11 +186,11 @@ if __name__ == "__main__":
     df = read_novels(path) # this line will fail until you have completed the read_novels function above.
     print(df.head())
     nltk.download("cmudict")
-    #parse(df)
-    #print(df.head())
+    df = parse(df)
+    print(df.head())
     print(get_ttrs(df))
     print(get_fks(df))
-    #df = pd.read_pickle(Path.cwd() / "pickles" /"name.pickle")
+    df = pd.read_pickle(Path.cwd() / "pickles" /"parsed.pickle")
     # print(adjective_counts(df))
     """ 
     for i, row in df.iterrows():
