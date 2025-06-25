@@ -6,8 +6,9 @@ import glob
 import nltk
 import spacy
 import pickle
-from pathlib import Path
 import pandas as pd
+from pathlib import Path
+from collections import Counter
 
 nlp = spacy.load("en_core_web_sm")
 nlp.max_length = 2000000
@@ -100,11 +101,10 @@ def read_novels(path=Path.cwd() / "texts" / "novels"):
 def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
     """Parses the text of a DataFrame using spaCy, stores the parsed docs as a column and writes
     the resulting  DataFrame to a pickle file"""
-    nlp = spacy.load("en_core_web_sm")
     # Ensure the store_path exists
     store_path.mkdir(parents=True, exist_ok=True)
-    # Stores the parsed documents in a new column called 'parsed_doc' in the DataFrame
-    df['parsed_doc'] = df['text'].apply(lambda x: process_text_in_sections(x, nlp))
+    # Stores the parsed documents in a new column called 'parsed' in the DataFrame
+    df['parsed'] = df['text'].apply(lambda x: process_text_in_sections(x, nlp))
 
     # Serialise the DataFrame using pickle format
     with open(store_path / out_name, 'wb') as f:
@@ -123,12 +123,12 @@ def parse(df, store_path=Path.cwd() / "pickles", out_name="parsed.pickle"):
 def process_text_in_sections(text, nlp, section_size=100000):
     """Processes the text in sections to avoid memory issues with large texts."""
     if len(text) <= nlp.max_length:
-        doc = nlp(text)
-        return doc
+        return nlp(text)
     else:
         sections = [text[i:i + section_size] for i in range(0, len(text), section_size)]
-        doc_sections = [nlp(section) for section in sections]
-        return doc_sections
+        # Concatenate processed sections' texts
+        concatenated_doc = ' '.join([nlp(section).text for section in sections])
+        return nlp(concatenated_doc)
 
 
 def nltk_ttr(text):
@@ -165,42 +165,66 @@ def subjects_by_verb_pmi(doc, target_verb):
 
 
 
-def subjects_by_verb_count(doc, verb):
+def subjects_by_verb_count(doc, verb, count=10):
     """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
-    pass
+    subjects = []
+    for token in doc:
+        if token.lemma_ == "hear" and token.pos_ == "VERB":
+            subject = [child for child in token.children if child.dep_ in ("nsubj", "nsubjpass")]
+            for sub in subject:
+                subjects.append(sub.text.lower())
+    most_common_subjects = Counter(subjects).most_common(count)
+    return most_common_subjects            
 
 
-
-def adjective_counts(doc):
+def adjective_counts(df, count=10):
     """Extracts the most common adjectives in a parsed document. Returns a list of tuples."""
-    pass
+    adjectives = []
+    for i, row in df.iterrows():
+        doc = row["parsed"]
+        adjectives = [token.text.lower() for token in doc if token.pos_ == "ADJ"]
+        most_common_adjectives = Counter(adjectives).most_common(count)
+        print(most_common_adjectives)
+        print("\n")
 
+
+def common_objects(doc, count):
+    """Returns a list of the ten most common syntactic objects overall in the text"""
+    objects = []
+    objects = [token.text.lower() for token in doc if token.dep_ == "dobj"]
+    most_common_objects = Counter(objects).most_common(count)
+    return most_common_objects
 
 
 if __name__ == "__main__":
     """
     uncomment the following lines to run the functions once you have completed them
     """
-    path = Path.cwd() / "p1-texts" / "novels"
-    print(path)
-    df = read_novels(path) # this line will fail until you have completed the read_novels function above.
-    print(df.head())
-    nltk.download("cmudict")
-    df = parse(df)
-    print(df.head())
-    print(get_ttrs(df))
-    print(get_fks(df))
+    # path = Path.cwd() / "p1-texts" / "novels"
+    # print(path)
+    # df = read_novels(path) # this line will fail until you have completed the read_novels function above.
+    # print(df.head())
+    # nltk.download("cmudict")
+    # df = parse(df)
+    # print(df.head())
+    # print(get_ttrs(df))
+    # print(get_fks(df))
     df = pd.read_pickle(Path.cwd() / "pickles" /"parsed.pickle")
-    # print(adjective_counts(df))
-    """ 
+    print(adjective_counts(df))
+    
+    for i, row in df.iterrows():
+        print(row["title"])
+        print(common_objects(row["parsed"], 10))
+        print("\n")
+            
     for i, row in df.iterrows():
         print(row["title"])
         print(subjects_by_verb_count(row["parsed"], "hear"))
         print("\n")
 
-    for i, row in df.iterrows():
-        print(row["title"])
-        print(subjects_by_verb_pmi(row["parsed"], "hear"))
-        print("\n")
     """
-
+    # for i, row in df.iterrows():
+    #     print(row["title"])
+    #     print(subjects_by_verb_pmi(row["parsed"], "hear"))
+    #     print("\n")
+    """
