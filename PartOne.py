@@ -3,6 +3,7 @@
 # Note: The template functions here and the dataframe format for structuring your solution is a suggested but not mandatory approach. You can use a different approach if you like, as long as you clearly answer the questions and communicate your answers clearly.
 
 import glob
+import math
 import nltk
 import spacy
 import pickle
@@ -159,9 +160,39 @@ def get_fks(df):
     return results
 
 
-def subjects_by_verb_pmi(doc, target_verb):
-    """Extracts the most common subjects of a given verb in a parsed document. Returns a list."""
-    pass
+def subjects_by_verb_pmi(doc, target_verb, top_elements=10):
+    """Extracts the most common subjects of a given verb in a parsed document. Returns a list ordered by their Pointwise Mutual Information."""
+    subjects_list = []
+    verb_counter = 0
+    subject_counter = Counter()
+    subject_verb_counter = Counter()
+    total_tokens = len(doc)
+
+    for token in doc:
+        if token.lemma_ == target_verb and token.pos_ == "VERB":
+            verb_counter += 1
+            subject = [child for child in token.children if child.dep_ in ("nsubj", "nsubjpass")]
+            for sub in subject:
+                subject_text = sub.text.lower()
+                subjects_list.append(subject_text)
+                subject_verb_counter[subject_text] += 1
+        if token.dep_ in ("nsubj", "nsubjpass"):
+            subject_counter[token.text.lower()] += 1
+
+    # Calculate PMI for each subject using th formula log((P(subject, verb) / (P(subject) * P(verb))))
+    # where P(subject, verb) is the joint probability of the subject and verb,
+    # P(subject) is the probability of the subject, and P(verb) is the probability of the verb.
+    pmi_scores_dict = {}
+    for subject, count in subject_verb_counter.items():
+        prob_subject = subject_counter[subject] / total_tokens
+        prob_verb = verb_counter / total_tokens
+        joint_prob_subject_verb = count / total_tokens
+        pmi_val = math.log2(joint_prob_subject_verb / (prob_subject * prob_verb))
+        pmi_scores_dict[subject] = pmi_val
+
+    # Sort subjects by PMI score
+    sorted_subjects = sorted(pmi_scores_dict.items(), key=lambda x: x[1], reverse=True)
+    return sorted_subjects[:top_elements]
 
 
 
@@ -200,15 +231,15 @@ if __name__ == "__main__":
     """
     uncomment the following lines to run the functions once you have completed them
     """
-    # path = Path.cwd() / "p1-texts" / "novels"
-    # print(path)
-    # df = read_novels(path) # this line will fail until you have completed the read_novels function above.
-    # print(df.head())
-    # nltk.download("cmudict")
-    # df = parse(df)
-    # print(df.head())
-    # print(get_ttrs(df))
-    # print(get_fks(df))
+    path = Path.cwd() / "p1-texts" / "novels"
+    print(path)
+    df = read_novels(path)
+    print(df.head())
+    nltk.download("cmudict")
+    df = parse(df)
+    print(df.head())
+    print(get_ttrs(df))
+    print(get_fks(df))
     df = pd.read_pickle(Path.cwd() / "pickles" /"parsed.pickle")
     print(adjective_counts(df))
     
@@ -222,9 +253,7 @@ if __name__ == "__main__":
         print(subjects_by_verb_count(row["parsed"], "hear"))
         print("\n")
 
-    """
-    # for i, row in df.iterrows():
-    #     print(row["title"])
-    #     print(subjects_by_verb_pmi(row["parsed"], "hear"))
-    #     print("\n")
-    """
+    for i, row in df.iterrows():
+        print(row["title"])
+        print(subjects_by_verb_pmi(row["parsed"], "hear"))
+        print("\n")
