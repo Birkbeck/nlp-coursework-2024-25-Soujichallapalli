@@ -42,10 +42,14 @@ def update_dataframe(df):
     return df_filtered
 
 
-def vectorize_speeches(df):
-    """Vectorizes speeches and splits into train/test sets."""
+def vectorize_speeches(df, ngram_range=(1, 1)):
+    """Vectorizes speeches and splits into train/test sets. 
+    Assigned (1, 1) as the default value for ngram_range parameter as the vectorizer internally 
+    considers only unigrams when ngram_range is not specified.
+    """
     vectorizer = TfidfVectorizer(stop_words='english', 
-                                 max_features=3000)
+                                 max_features=3000,
+                                 ngram_range=ngram_range)
     
     tfidf_matrix = vectorizer.fit_transform(df['speech'])
     
@@ -97,6 +101,11 @@ if __name__ == "__main__":
     df_filtered = update_dataframe(df)
     X_train, X_test, y_train, y_test = vectorize_speeches(df_filtered)
     train_randomforest_svm_models(X_train, X_test, y_train, y_test)
+    # Calling vectorize_speeches function with ngram_range=(1, 3) to include unigrams, bigrams, and trigrams.
+    X_train_new, X_test_new, y_train_new, y_test_new = vectorize_speeches(df_filtered, ngram_range=(1, 3))
+    train_randomforest_svm_models(X_train_new, X_test_new, y_train_new, y_test_new)
+    
+    
 
 
 
