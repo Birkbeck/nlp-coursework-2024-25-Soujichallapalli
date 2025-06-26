@@ -1,7 +1,11 @@
 import pandas as pd
 from pathlib import Path
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, f1_score
 from sklearn.feature_extraction.text import TfidfVectorizer
+
 
 def read_speeches_csv(path):
     """Reads a CSV file containing speeches and returns a DataFrame."""
@@ -58,6 +62,32 @@ def vectorize_speeches(df):
     return X_train, X_test, y_train, y_test
     
     
+def train_randomforest_svm_models(X_train, X_test, y_train, y_test):
+    """Trains RandomForest and SVM models using the training data."""
+    
+    # Train Random Forest Classifier
+    rf_clf = RandomForestClassifier(n_estimators=300, random_state=26)
+    # Fit the model to the training data
+    rf_clf.fit(X_train, y_train)
+    # Predict on the test set for ‘party’ value
+    rf_y_pred = rf_clf.predict(X_test)
+    # Print the F1 score
+    print("Random Forest classifier \n\nMacro-average F1 score:", f1_score(y_test, rf_y_pred, average='macro'))
+    # Print the classification report
+    print("\nClassification Report:\n", classification_report(y_test, rf_y_pred, zero_division=0))
+    
+    # Train SVM Classifier with linear kernel
+    svm_clf = SVC(kernel='linear', random_state=26)
+    # Fit the model to the training data
+    svm_clf.fit(X_train, y_train)
+    # Predict on the test set for ‘party’ value
+    svm_y_pred = svm_clf.predict(X_test)
+    # Print the F1 score
+    print("SVM classifier \n\nMacro-average F1 score:", f1_score(y_test, svm_y_pred, average='macro'))
+    # Print the classification report
+    print("\nClassification Report:\n", classification_report(y_test, svm_y_pred))
+    
+    
 if __name__ == "__main__":
     """
     Main method
@@ -66,6 +96,8 @@ if __name__ == "__main__":
     df = read_speeches_csv(path)
     df_filtered = update_dataframe(df)
     X_train, X_test, y_train, y_test = vectorize_speeches(df_filtered)
+    train_randomforest_svm_models(X_train, X_test, y_train, y_test)
+
 
 
 
